@@ -10,6 +10,8 @@
 #include <SDL_syswm.h>
 #include <SDL_opengl.h>
 #include "imgui.h"
+ #define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #include "imgui_impl_sdl.h"
 
 // Data
@@ -17,6 +19,34 @@ static double       g_Time = 0.0f;
 static bool         g_MousePressed[3] = { false, false, false };
 static float        g_MouseWheel = 0.0f;
 static GLuint       g_FontTexture = 0;
+
+struct ImageData{
+    void* Data;
+    GLuint ID;
+    int w;
+    int h;
+    int n;
+};
+
+void LoadImage(char* Filename,ImageData *Result){
+
+    // TODO: Fix BMP and 3 channel file(RGB) loading -- opengl rendering it flipped
+    Result->Data = (stbi_load(Filename,&Result->w,&Result->h,&Result->n,0));
+    glEnable(GL_TEXTURE_2D);
+    glGenTextures(1, &Result->ID);
+    glBindTexture(GL_TEXTURE_2D, Result->ID);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if(Result->n == 3)glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, Result->w, Result->h, 0, GL_RGB,GL_UNSIGNED_BYTE, Result->Data);
+    if(Result->n == 4)glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Result->w, Result->h, 0, GL_RGBA,GL_UNSIGNED_BYTE, Result->Data);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+}
+
+void FreeImage(ImageData *Image){
+    stbi_image_free(Image->Data);
+    Image = {};
+}
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
 // If text or lines are blurry when integrating ImGui in your engine:
